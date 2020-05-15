@@ -38,23 +38,25 @@ int main()
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 		printf("Error initializing SDL: %s\n", SDL_GetError());
-	std::cout<<"1"<<std::endl;
+	// std::cout<<"1"<<std::endl;
 	SDL_Window* win = SDL_CreateWindow("Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1000, 1000, 0);
 
 	Uint32 render_flags = SDL_RENDERER_ACCELERATED;
 
 	SDL_Renderer* rend = SDL_CreateRenderer(win, -1, render_flags);
-	std::cout<<"2"<<std::endl;
+	// std::cout<<"2"<<std::endl;
 
 	// SDL_Surface* surface = IMG_Load("resources/rocket.png");
 
 	SDL_Texture* rocketTex = TextureFromSurface("resources/rocket.png", rend);
+
 	// SDL_FreeSurface(surface);
 	// std::cout<<"1"<<std::endl;
 	SDL_Rect rocket, obstacles[10], lives, bgObjs[10], bgObst[10], psngrShip[7], scoreAdder, bullets[10], startmenu;
-	std::cout<<"3"<<std::endl;
+	// std::cout<<"3"<<std::endl;
 
-	SDL_Texture* bltsTex[10], *livesTex, *bgTex, *startMenuTex, *exitMenuTex, *obstaclesTex[10], *gameoverTex, *bgObjTex[10], *scoreAdderTex, *psngrShipTex[7];
+	SDL_Texture* bltsTex[10], *livesTex, *bgTex, *startMenuTex, *obstaclesTex[10], *gameoverTex, *bgObjTex[10], *scoreAdderTex, *psngrShipTex[7];
+	// not using anymone: *exitMenuTex, 
 	// surface = IMG_LOAD("resources/bullet.png");
 
 	for(int i = 0; i<10; i++)
@@ -73,7 +75,7 @@ int main()
 	// SDL_FreeSurface(surface);
 
 	// surface = IMG_LOAD("resources/exit.png");
-	exitMenuTex = TextureFromSurface("resources/exit.png", rend);
+	// exitMenuTex = TextureFromSurface("resources/exit.png", rend);
 	// SDL_FreeSurface(surface);
 	
 	// surface = IMG_LOAD("resources/obstacle.gif");
@@ -147,8 +149,6 @@ int main()
 	float rktPos_y = (WINDOW_HEIGHT - rocket.h) / 2;
 	float rktVel_x = 0, rktVel_y = 0;
 	float bulletPos_x[10], bulletPos_y[10];
-	int up = 0, down = 0, left = 0, right = 0;
-	int remainLife = 3;
 	lives.x = WINDOW_WIDTH - lives.w;
 	lives.y = 0;
 	int gameOption = 1; // 0 for exit 1 for startGame
@@ -174,7 +174,7 @@ int main()
 							break;
 						case SDL_SCANCODE_RETURN:
 							gameOption = 1;
-							// closeGame = 1;
+							closeGame = 1;
 							break;
 					}
 					break;
@@ -201,4 +201,111 @@ int main()
     	SDL_RenderPresent(rend);
     	SDL_Delay(1000/60);
 	}
+    SDL_RenderClear(rend);
+	SDL_DestroyTexture(startMenuTex);
+	std::cout<<"outside\n";
+
+	scoreAdderTex = TextureFromSurface("resources/plus.png", rend);
+	SDL_QueryTexture(scoreAdderTex, NULL, NULL, &scoreAdder.w, &scoreAdder.h);
+
+	scoreAdder.w /= 2;
+	scoreAdder.h /= 2;
+	for(int i = 0; i < 10; i++)
+	{
+		bgObjs[i].x = i*10;
+		bgObjs[i].y = i*10;
+	}
+
+	closeGame = 0; //resetting game loop
+	int up = 0, down = 0, left = 0, right = 0, shotFired = 0, shots = 0;
+	int remainLife = 3;
+
+	while(!closeGame)
+	{
+		SDL_Event event;
+		while (SDL_PollEvent(&event))
+		{
+			switch (event.type)
+			{
+				case SDL_QUIT:
+					closeGame = 1;
+					break;
+				case SDL_KEYDOWN:
+					switch(event.key.keysym.scancode)
+					{
+						case SDL_SCANCODE_UP:
+							up = 1;
+							break;
+						case SDL_SCANCODE_DOWN:
+							down = 1;
+							break;	
+						case SDL_SCANCODE_LEFT:
+							left = 1;
+							break;
+						case SDL_SCANCODE_RIGHT:
+							right = 1;
+							break;
+						case SDL_SCANCODE_SPACE:
+							shotFired = 1;
+							shots += 1;
+							// if (shots > 9)
+							break;
+						// have to code escape sequnece
+						case SDL_SCANCODE_ESCAPE:
+							closeGame = 1;
+							break;
+					}
+					break;
+				case SDL_KEYUP:
+				    switch (event.key.keysym.scancode)
+				    {
+				        case SDL_SCANCODE_UP:
+				            up = 0;
+				            break;
+				        case SDL_SCANCODE_LEFT:
+				            left = 0;
+				            break;
+				        case SDL_SCANCODE_DOWN:
+				            down = 0;
+				            break;
+				        case SDL_SCANCODE_RIGHT:
+			            	right = 0;
+				            break;
+				    }
+					break;
+			}
+		}
+
+		rktVel_x = 0;
+		rktVel_y = 0;
+
+		if (up && !down) rktVel_y = -SPEED;
+		if (down && !up) rktVel_y = SPEED;
+		if (left && !right) rktVel_x = -SPEED;
+		if (right && !left) rktVel_x = SPEED;
+
+		rktPos_x += rktVel_x / 30;
+		rktPos_y += rktVel_y / 30;
+
+
+
+
+
+		SDL_RenderClear(rend);
+		SDL_RenderCopy(rend, bgTex, NULL, NULL);
+		SDL_RenderCopy(rend, livesTex, NULL, &lives);
+		SDL_RenderPresent(rend);
+		SDL_RenderCopy(rend, rocketTex, NULL, &rocket);
+		SDL_RenderPresent(rend);
+
+		SDL_Delay(1000/30);
+	}
+
+	// destroy renderer 
+	SDL_DestroyRenderer(rend); 
+
+	// destroy window 
+	SDL_DestroyWindow(win); 
+
+	return 0;
 }
