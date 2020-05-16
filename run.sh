@@ -1,1 +1,1 @@
-g++ rocketGame.cpp `sdl2-config --cflags --libs` -lSDL2_image && ./a.out
+g++ rocketGame.cpp -o game `sdl2-config --cflags --libs` -lSDL2_image && ./game
