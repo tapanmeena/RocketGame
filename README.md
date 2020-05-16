@@ -1,2 +1,2 @@
 # RocketGame
-Game Written in C++ using SDL Library
+My First ever Game Written in C++ using SDL Library

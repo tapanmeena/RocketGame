@@ -9,7 +9,9 @@
 #define WINDOW_HEIGHT (1000)
 #define WINDOW_WIDTH (1000)
 #define SPEED (300)
-
+#define difficulty (1)
+#define numObstacles (4)
+// #define INITIAL_CONFIG ()
 /*SDL_Texture* TextureFromSurfaceStartMenu(int i, SDL_Renderer* rend)
 {
 	char integer_string[32];
@@ -22,6 +24,27 @@
 	// SDL_FreeSurface(surface);
 	return SDL_CreateTextureFromSurface(rend, surface);
 }*/
+
+bool isCollide(SDL_Rect object1, SDL_Rect object2)
+{
+	if((object1.y >= object2.y) && (object1.y <= (object2.y + object2.h)) && (object1.x >= object2.x) && (object1.x <= (object2.x + object2.w)))
+		return true;
+	return false;
+}
+
+bool isDestroyed(SDL_Rect object1, SDL_Rect object2)
+{
+	if(((object1.y + object1.h) >= object2.y) && ((object1.y + object1.h) <= (object2.y + object2.h)) && (object1.x + object1.w >= object2.x) && (object1.x <= (object2.x + object2.w)))
+		return true;
+	return false; 
+}
+
+bool isRocketHit(SDL_Rect object1, SDL_Rect object2)
+{
+	if ((object1.y + object1. h) >= object2.y && ((object2.y + object2.h - 10) >= object1.y) && (object2.x <= (object1.x +object1.w)) && ((object2.x + object2.w) >= object1.x))
+		return true;
+	return false;
+}
 
 SDL_Texture* TextureFromSurface(const char* path, SDL_Renderer* rend)
 {
@@ -52,13 +75,13 @@ int main()
 
 	// SDL_FreeSurface(surface);
 	// std::cout<<"1"<<std::endl;
-	SDL_Rect rocket, obstacles[10], lives, bgObjs[10], bgObst[10], psngrShip[7], scoreAdder, bullets[10], startmenu;
+	SDL_Rect rocket, obstacles[10], lives, bgObjs[10], bgObst[10], psngrShip[7], scoreAdder, bullets[10], startmenu, explode;
 	// std::cout<<"3"<<std::endl;
 
-	SDL_Texture* bltsTex[10], *livesTex, *bgTex, *startMenuTex, *obstaclesTex[10], *gameoverTex, *bgObjTex[10], *scoreAdderTex, *psngrShipTex[7];
+	SDL_Texture* bltsTex[10], *livesTex, *bgTex, *startMenuTex, *obstaclesTex[10], *gameoverTex, *bgObjTex[10], *scoreAdderTex, *psngrShipTex[7], *explodeTex;
 	// not using anymone: *exitMenuTex, 
 	// surface = IMG_LOAD("resources/bullet.png");
-
+restart:
 	for(int i = 0; i<10; i++)
 		bltsTex[i] = TextureFromSurface("resources/bullet.png", rend);
 	// SDL_FreeSurface(surface);
@@ -69,7 +92,7 @@ int main()
 	// SDL_FreeSurface(surface);
 
 	// surface = IMG_LOAD("resources/start.png");
-/*	for(int i = 0; i<26; i++)
+	/*for(int i = 0; i<26; i++)
 		startMenuTex[i] = TextureFromSurfaceStartMenu(i, rend);*/
 	startMenuTex = TextureFromSurface("resources/start.png", rend);
 	// SDL_FreeSurface(surface);
@@ -82,6 +105,7 @@ int main()
 	for (int i = 0; i<10; i++)
 		obstaclesTex[i] = TextureFromSurface("resources/obstacle.gif", rend);
 	// SDL_FreeSurface(surface);
+	explodeTex = TextureFromSurface("resources/explode.png", rend);
 
 	// surface = IMG_LOAD("resources/gameover.png");
 	gameoverTex = TextureFromSurface("resources/gameover.png", rend);
@@ -109,6 +133,8 @@ int main()
 		SDL_QueryTexture(bltsTex[i], NULL, NULL, &bullets[i].w, &bullets[i].h);
 	// SDL_Rect startmenu;
 	SDL_QueryTexture(startMenuTex, NULL, NULL, &startmenu.w, &startmenu.h);
+	SDL_QueryTexture(explodeTex, NULL, NULL, &explode.w, &explode.h);
+	std::cout<<explode.w<<" "<<explode.h<<std::endl;
 	// std::cout<<" asd "<<startmenu.w/26<<" "<<startmenu.h<<std::endl;
 	for (int i = 0; i<7; i++)
 	{
@@ -132,6 +158,9 @@ int main()
 
 	rocket.w /= 8;
 	rocket.h /= 8;
+
+	explode.w /= 8;
+	explode.h /= 8;
 
 	for (int i = 0; i<10; i++)
 	{
@@ -190,13 +219,13 @@ int main()
         	SDL_Rect dstrect = {112 , 125, 800, 500};
         	SDL_RenderCopy(rend, startMenuTex, &srcrect, &dstrect);
         	// SDL_RenderCopy(rend, startMenuTex[0], NULL, NULL);
-/*        	for(int i = 0; i < 26; i++)
+        	/*for(int i = 0; i < 26; i++)
         	{
 	        	SDL_RenderCopy(rend, startMenuTex[i], NULL, NULL);
         	}*/
         }
         // SDL_RenderClear(rend);
-/*        if(gameOption == 0)
+        /*if(gameOption == 0)
         	SDL_RenderCopy(rend, exitMenuTex, NULL, NULL);*/
     	SDL_RenderPresent(rend);
     	SDL_Delay(1000/60);
@@ -219,7 +248,13 @@ int main()
 	closeGame = 0; //resetting game loop
 	int up = 0, down = 0, left = 0, right = 0, shotFired = 0, shots = 0;
 	int remainLife = 3;
-
+	int obsInitilizer[10];
+	memset(obsInitilizer, 0, sizeof(obsInitilizer));
+	int shotsAlive[10];
+	memset(shotsAlive, 0, sizeof(shotsAlive));
+	std::queue<int> bulletsQueue;
+	for(int i = 0; i<10; i++)
+		bulletsQueue.push(i);
 	while(!closeGame)
 	{
 		SDL_Event event;
@@ -279,6 +314,7 @@ int main()
 		rktVel_x = 0;
 		rktVel_y = 0;
 
+		// from this rocket can move in 8 dimensions
 		if (up && !down) rktVel_y = -SPEED;
 		if (down && !up) rktVel_y = SPEED;
 		if (left && !right) rktVel_x = -SPEED;
@@ -287,25 +323,161 @@ int main()
 		rktPos_x += rktVel_x / 30;
 		rktPos_y += rktVel_y / 30;
 
+		// creating rocket boundries
+		if (rktPos_x <= 0)
+			rktPos_x = WINDOW_WIDTH - rocket.w;
+		else if(rktPos_x >= WINDOW_WIDTH - rocket.w)
+			rktPos_x = 0;
 
+		if (rktPos_y <= 100)
+			rktPos_y = 100;
+		else if (rktPos_y >= WINDOW_HEIGHT - rocket.h)
+			rktPos_y = WINDOW_HEIGHT - rocket.h;
 
+		for (int i = 0; i<7; i++)
+		{
+			psngrShip[i].x = 50 + psngrShip[i].w * i;
+			psngrShip[i].y = WINDOW_HEIGHT - psngrShip[i].h;
+		}
 
+		rocket.y = (int) rktPos_y;
+		rocket.x = (int) rktPos_x;
 
+		for(int i = 0; i < numObstacles; i++)
+		{
+			if(obsInitilizer[i] == 0)
+			{
+				obstacles[i].x = rand() % 800;
+				obsInitilizer[i] = 1;
+				obstacles[i].y = 0;
+			}
+			else
+				obstacles[i].y = obstacles[i].y + (SPEED/50) * difficulty;
+		}
+
+		if (shotFired)
+		{
+			int frontBullet = bulletsQueue.front();
+			bulletsQueue.pop();
+			bulletsQueue.push(frontBullet);
+			bulletPos_x[frontBullet] = rocket.x + (rocket.w/2);
+			bulletPos_y[frontBullet] = rocket.y;
+			shotFired = 0;
+		}
+
+		for (int i = 0; i<10; i++)
+		{
+			bullets[i].x = bulletPos_x[i];
+			bullets[i].y = bulletPos_y[i];
+			bulletPos_y[i] = bulletPos_y[i] - SPEED / 50; //can be change later for speeding Bullet
+		}
 		SDL_RenderClear(rend);
+
 		SDL_RenderCopy(rend, bgTex, NULL, NULL);
-		SDL_RenderCopy(rend, livesTex, NULL, &lives);
 		SDL_RenderPresent(rend);
 		SDL_RenderCopy(rend, rocketTex, NULL, &rocket);
 		SDL_RenderPresent(rend);
+		SDL_RenderCopy(rend, livesTex, NULL, &lives);
+		SDL_RenderPresent(rend);
 
+		for(int i=0;i<=10;i++)				// shows bullets on the screen
+		{
+		    SDL_RenderCopy(rend, bltsTex[i], NULL, &bullets[i]);
+		}
+		SDL_RenderPresent(rend);
+
+		// render passenger ships
+		for (int i = 0; i<10; i++)
+		{
+			if (passengerShipCount[i] == 0)
+				SDL_RenderCopy(rend, psngrShipTex[i], NULL, &psngrShip[i]);
+		}
+		SDL_RenderPresent(rend);
+
+		// render obstacles
+		for (int i = 0; i < numObstacles; i++)
+			SDL_RenderCopy(rend, obstaclesTex[i], NULL, &obstacles[i]);
+
+		//------------- all things rendered now ------------ except no. of hearts currently using sprite//
+
+		// ----------------- now doing collision checking ------------------//
+
+		//checking collision between bullets and asteriods
+		for(int i = 0; i < 10; i++)
+			for(int j = 0; j < numObstacles; j++)
+				if (isCollide(bullets[i], obstacles[j]))
+					obsInitilizer[j] = 0;
+					// obstacles[j].x = -WINDOW_WIDTH;
+
+		// checking collision between asteriod and passenger ship
+		for(int i = 0; i<numObstacles; i++)
+		{
+			for(int j = 0; j < 7; j++)
+			{
+				if(passengerShipCount[j] == 0)
+				{
+					// std::cout<<"s\n";
+					if(isDestroyed(obstacles[i], psngrShip[j]))
+					{
+						// std::cout<<"Ship destroyed\n";
+						passengerShipCount[j] = 1;
+						SDL_DestroyTexture(psngrShipTex[j]);
+					}
+				}
+			}
+		}
+
+		// checking collision between asteriod and Rocket Ship
+		for (int i = 0; i<numObstacles; i++)
+		{
+			if(isRocketHit(obstacles[i], rocket))
+			{
+				obsInitilizer[i] = 0;
+				remainLife --;
+				if (remainLife < 0)
+					closeGame = 1;
+				lives.x += lives.w/3;
+				// SDL_Delay(1000/30);
+			}
+		}
+
+		// respawning destroyed Obstacles
+		for(int i = 0; i < numObstacles; i++)
+			if (obstacles[i].y >= WINDOW_HEIGHT || obstacles[i].x < 0)
+				obsInitilizer[i] = 0;
+
+		// checking for Game Over
+		int count = 0;
+		for (int i = 0; i<7; i++)
+			if (passengerShipCount[i] == 0)
+				count++;
+		if (count == 0)
+			closeGame = 1;
+
+		SDL_RenderPresent(rend);
 		SDL_Delay(1000/30);
 	}
 
-	// destroy renderer 
+	SDL_RenderClear(rend);
+	SDL_RenderCopy(rend, gameoverTex, NULL, NULL);
+	SDL_RenderPresent(rend);
+	SDL_Delay(3000);
+	// goto restart;
+
+	SDL_DestroyTexture(startMenuTex);
+	SDL_DestroyTexture(livesTex);
+	SDL_DestroyTexture(bgTex);
+	SDL_DestroyTexture(scoreAdderTex);
+	SDL_DestroyTexture(explodeTex);
+	for (int i = 0; i < 10; ++i)
+	{
+		SDL_DestroyTexture(bltsTex[i]);
+		SDL_DestroyTexture(obstaclesTex[i]);
+		if(i<7)
+			SDL_DestroyTexture(psngrShipTex[i]);
+	}
 	SDL_DestroyRenderer(rend); 
-
-	// destroy window 
 	SDL_DestroyWindow(win); 
-
+	// SDL_QUIT();
 	return 0;
 }
