@@ -5,26 +5,17 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
 #include <bits/stdc++.h>
 
-#define WINDOW_HEIGHT (1000)
-#define WINDOW_WIDTH (1000)
-#define SPEED (300)
-#define difficulty (1)
-#define numObstacles (4)
-// #define INITIAL_CONFIG ()
-/*SDL_Texture* TextureFromSurfaceStartMenu(int i, SDL_Renderer* rend)
-{
-	char integer_string[32];
-	sprintf(integer_string, "%d", i);
-	char path[64] = "resources/startmenu/";
-	strcat(path, integer_string);
-	char extension[32] = ".png";
-	strcat(path, extension);
-	SDL_Surface* surface = IMG_Load(path);
-	// SDL_FreeSurface(surface);
-	return SDL_CreateTextureFromSurface(rend, surface);
-}*/
+const int WINDOW_HEIGHT = 1000;
+const int WINDOW_WIDTH = 1000;
+const int SPEED = 300;
+const int difficulty = 1;
+const int numObstacles = 4;
+const int numBullets = 10;
+const int numPsngrShip = 7;
+const int frameRate = 1000/30;
 
 bool isCollide(SDL_Rect object1, SDL_Rect object2)
 {
@@ -57,6 +48,11 @@ SDL_Texture* TextureFromSurface(const char* path, SDL_Renderer* rend)
 
 int main()
 {
+/*	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 1024) == -1)
+		printf("%s", Mix_GetError());
+	Mix_Music *music;
+	music = Mix_LoadMUS("music/backgroundMusic.mp3");
+	Mix_PlayMusic(music, -1);*/
 	int closeGame = 0;
 	srand(time(0));
 	time_t currentTime;
@@ -83,12 +79,12 @@ int main()
 	// not using anymone: *exitMenuTex, 
 	// surface = IMG_LOAD("resources/bullet.png");
 // restart:
-	for(int i = 0; i<10; i++)
+	for(int i = 0; i<numBullets; i++)
 		bltsTex[i] = TextureFromSurface("resources/bullet.png", rend);
 	// SDL_FreeSurface(surface);
 
 	// surface = IMG_LOAD("resources/passengerShip.png");
-	for (int i = 0; i < 7; i++)
+	for (int i = 0; i < numPsngrShip; i++)
 		psngrShipTex[i] = TextureFromSurface("resources/passengerShip.png", rend);
 	// SDL_FreeSurface(surface);
 
@@ -103,7 +99,7 @@ int main()
 	// SDL_FreeSurface(surface);
 	
 	// surface = IMG_LOAD("resources/obstacle.gif");
-	for (int i = 0; i<10; i++)
+	for (int i = 0; i<numObstacles; i++)
 		obstaclesTex[i] = TextureFromSurface("resources/obstacle.png", rend);
 	// SDL_FreeSurface(surface);
 	explodeTex = TextureFromSurface("resources/explode.png", rend);
@@ -128,16 +124,16 @@ int main()
 	for (int i = 0; i < 10; i++)
 		SDL_QueryTexture(bgObjTex[i], NULL, NULL, &bgObjs[i].w, &bgObjs[i].h);
 	SDL_QueryTexture(rocketTex, NULL, NULL, &rocket.w, &rocket.h);
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < numObstacles; i++)
 		SDL_QueryTexture(obstaclesTex[i], NULL, NULL, &obstacles[i].w, &obstacles[i].h);
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < numBullets; i++)
 		SDL_QueryTexture(bltsTex[i], NULL, NULL, &bullets[i].w, &bullets[i].h);
 	// SDL_Rect startmenu;
 	SDL_QueryTexture(startMenuTex, NULL, NULL, &startmenu.w, &startmenu.h);
 	SDL_QueryTexture(explodeTex, NULL, NULL, &explode.w, &explode.h);
 	// std::cout<<explode.w<<" "<<explode.h<<std::endl;
 	// std::cout<<" asd "<<startmenu.w/26<<" "<<startmenu.h<<std::endl;
-	for (int i = 0; i<7; i++)
+	for (int i = 0; i<numPsngrShip; i++)
 	{
 		SDL_QueryTexture(psngrShipTex[i], NULL, NULL, &psngrShip[i].w, &psngrShip[i].h);
 		// niche ki 2 lines comment karke chalana hai ek baar code
@@ -145,10 +141,10 @@ int main()
 		psngrShip[i].h /= 2;
 	}
 
-	int passengerShipCount[7] = {0, 0, 0, 0, 0, 0, 0};
+	int passengerShipCount[numPsngrShip] = {0, 0, 0, 0, 0, 0, 0};
 
 	// Adjusting Height and Width of Objects
-	for (int i=0; i<10; i++)
+	for (int i=0; i < 10; i++)
 	{
 		bgObjs[i].w /= 4;
 		bgObjs[i].h /= 4;
@@ -163,13 +159,13 @@ int main()
 	explode.w /= 8;
 	explode.h /= 8;
 
-	for (int i = 0; i<10; i++)
+	for (int i = 0; i < numObstacles; i++)
 	{
 		obstacles[i].w /= 6;
 		obstacles[i].h /= 6;
 	}
 
-	for(int i = 0; i<10; i++)
+	for(int i = 0; i < numBullets; i++)
 	{
 		bullets[i].w /= 6;
 		bullets[i].h /= 6;
@@ -335,7 +331,7 @@ int main()
 		else if (rktPos_y >= WINDOW_HEIGHT - rocket.h)
 			rktPos_y = WINDOW_HEIGHT - rocket.h;
 
-		for (int i = 0; i<7; i++)
+		for (int i = 0; i < numPsngrShip; i++)
 		{
 			psngrShip[i].x = 50 + psngrShip[i].w * i;
 			psngrShip[i].y = WINDOW_HEIGHT - psngrShip[i].h;
@@ -366,7 +362,7 @@ int main()
 			shotFired = 0;
 		}
 
-		for (int i = 0; i<10; i++)
+		for (int i = 0; i < numBullets; i++)
 		{
 			bullets[i].x = bulletPos_x[i];
 			bullets[i].y = bulletPos_y[i];
@@ -381,14 +377,12 @@ int main()
 		SDL_RenderCopy(rend, livesTex, NULL, &lives);
 		SDL_RenderPresent(rend);
 
-		for(int i=0;i<=10;i++)				// shows bullets on the screen
-		{
+		for(int i=0;i < numBullets;i++)				// shows bullets on the screen
 		    SDL_RenderCopy(rend, bltsTex[i], NULL, &bullets[i]);
-		}
 		SDL_RenderPresent(rend);
 
 		// render passenger ships
-		for (int i = 0; i<10; i++)
+		for (int i = 0; i < numPsngrShip; i++)
 		{
 			if (passengerShipCount[i] == 0)
 				SDL_RenderCopy(rend, psngrShipTex[i], NULL, &psngrShip[i]);
@@ -404,7 +398,7 @@ int main()
 		// ----------------- now doing collision checking ------------------//
 		// bool collide = false;
 		//checking collision between bullets and asteriods
-		for(int i = 0; i < 10; i++)
+		for(int i = 0; i < numBullets; i++)
 		{
 			for(int j = 0; j < numObstacles; j++)
 			{
@@ -412,7 +406,7 @@ int main()
 				{
 					obsInitilizer[j] = 0;
 					scoreAdder.x = rocket.x;
-					scoreAdder.y = rocket.y - 25;
+					scoreAdder.y = rocket.y - 30;
 					explode.x = obstacles[j].x;
 					explode.y = obstacles[j].y;
 					currentTime = time(NULL);
@@ -422,7 +416,7 @@ int main()
 
 		// for explosion and scoreadder
 		time_t tempTime = time(NULL);
-		if(tempTime < currentTime+1)
+		if(tempTime < currentTime+1.5)
 		{
 			SDL_RenderCopy(rend, scoreAdderTex, NULL, &scoreAdder);
 			SDL_RenderCopy(rend, explodeTex, NULL, &explode);			
@@ -431,11 +425,10 @@ int main()
 		// checking collision between asteriod and passenger ship
 		for(int i = 0; i<numObstacles; i++)
 		{
-			for(int j = 0; j < 7; j++)
+			for(int j = 0; j < numPsngrShip; j++)
 			{
 				if(passengerShipCount[j] == 0)
 				{
-					// std::cout<<"s\n";
 					if(isDestroyed(obstacles[i], psngrShip[j]))
 					{
 						// std::cout<<"Ship destroyed\n";
@@ -467,14 +460,14 @@ int main()
 
 		// checking for Game Over
 		int count = 0;
-		for (int i = 0; i<7; i++)
+		for (int i = 0; i < numPsngrShip; i++)
 			if (passengerShipCount[i] == 0)
 				count++;
 		if (count == 0)
 			closeGame = 1;
 
 		SDL_RenderPresent(rend);
-		SDL_Delay(1000/30);
+		SDL_Delay(frameRate);
 	}
 
 	SDL_RenderClear(rend);
