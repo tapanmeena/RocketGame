@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <ctime>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_image.h>
@@ -58,7 +59,7 @@ int main()
 {
 	int closeGame = 0;
 	srand(time(0));
-
+	time_t currentTime;
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 		printf("Error initializing SDL: %s\n", SDL_GetError());
 	// std::cout<<"1"<<std::endl;
@@ -81,7 +82,7 @@ int main()
 	SDL_Texture* bltsTex[10], *livesTex, *bgTex, *startMenuTex, *obstaclesTex[10], *gameoverTex, *bgObjTex[10], *scoreAdderTex, *psngrShipTex[7], *explodeTex;
 	// not using anymone: *exitMenuTex, 
 	// surface = IMG_LOAD("resources/bullet.png");
-restart:
+// restart:
 	for(int i = 0; i<10; i++)
 		bltsTex[i] = TextureFromSurface("resources/bullet.png", rend);
 	// SDL_FreeSurface(surface);
@@ -103,7 +104,7 @@ restart:
 	
 	// surface = IMG_LOAD("resources/obstacle.gif");
 	for (int i = 0; i<10; i++)
-		obstaclesTex[i] = TextureFromSurface("resources/obstacle.gif", rend);
+		obstaclesTex[i] = TextureFromSurface("resources/obstacle.png", rend);
 	// SDL_FreeSurface(surface);
 	explodeTex = TextureFromSurface("resources/explode.png", rend);
 
@@ -134,7 +135,7 @@ restart:
 	// SDL_Rect startmenu;
 	SDL_QueryTexture(startMenuTex, NULL, NULL, &startmenu.w, &startmenu.h);
 	SDL_QueryTexture(explodeTex, NULL, NULL, &explode.w, &explode.h);
-	std::cout<<explode.w<<" "<<explode.h<<std::endl;
+	// std::cout<<explode.w<<" "<<explode.h<<std::endl;
 	// std::cout<<" asd "<<startmenu.w/26<<" "<<startmenu.h<<std::endl;
 	for (int i = 0; i<7; i++)
 	{
@@ -170,8 +171,8 @@ restart:
 
 	for(int i = 0; i<10; i++)
 	{
-		bullets[i].w /= 9;
-		bullets[i].h /= 16;
+		bullets[i].w /= 6;
+		bullets[i].h /= 6;
 	}
 
 	float rktPos_x = (WINDOW_WIDTH - rocket.w) / 2;
@@ -214,7 +215,7 @@ restart:
         if (gameOption == 1)
         {
         	Uint32 ticks = SDL_GetTicks();
-        	Uint32 sprite = (ticks / 250) % 26;
+        	int sprite = (ticks / 250) % 26;
         	SDL_Rect srcrect = {sprite * 500 , 0, 500 , 275};
         	SDL_Rect dstrect = {112 , 125, 800, 500};
         	SDL_RenderCopy(rend, startMenuTex, &srcrect, &dstrect);
@@ -232,7 +233,7 @@ restart:
 	}
     SDL_RenderClear(rend);
 	SDL_DestroyTexture(startMenuTex);
-	std::cout<<"outside\n";
+	// std::cout<<"outside\n";
 
 	scoreAdderTex = TextureFromSurface("resources/plus.png", rend);
 	SDL_QueryTexture(scoreAdderTex, NULL, NULL, &scoreAdder.w, &scoreAdder.h);
@@ -360,7 +361,7 @@ restart:
 			int frontBullet = bulletsQueue.front();
 			bulletsQueue.pop();
 			bulletsQueue.push(frontBullet);
-			bulletPos_x[frontBullet] = rocket.x + (rocket.w/2);
+			bulletPos_x[frontBullet] = rocket.x + (rocket.w/2) - (bullets[0].w/2);
 			bulletPos_y[frontBullet] = rocket.y;
 			shotFired = 0;
 		}
@@ -374,9 +375,9 @@ restart:
 		SDL_RenderClear(rend);
 
 		SDL_RenderCopy(rend, bgTex, NULL, NULL);
-		SDL_RenderPresent(rend);
+		// SDL_RenderPresent(rend);
 		SDL_RenderCopy(rend, rocketTex, NULL, &rocket);
-		SDL_RenderPresent(rend);
+		// SDL_RenderPresent(rend);
 		SDL_RenderCopy(rend, livesTex, NULL, &lives);
 		SDL_RenderPresent(rend);
 
@@ -401,13 +402,31 @@ restart:
 		//------------- all things rendered now ------------ except no. of hearts currently using sprite//
 
 		// ----------------- now doing collision checking ------------------//
-
+		// bool collide = false;
 		//checking collision between bullets and asteriods
 		for(int i = 0; i < 10; i++)
+		{
 			for(int j = 0; j < numObstacles; j++)
+			{
 				if (isCollide(bullets[i], obstacles[j]))
+				{
 					obsInitilizer[j] = 0;
-					// obstacles[j].x = -WINDOW_WIDTH;
+					scoreAdder.x = rocket.x;
+					scoreAdder.y = rocket.y - 25;
+					explode.x = obstacles[j].x;
+					explode.y = obstacles[j].y;
+					currentTime = time(NULL);
+				}
+			}
+		}
+
+		// for explosion and scoreadder
+		time_t tempTime = time(NULL);
+		if(tempTime < currentTime+1)
+		{
+			SDL_RenderCopy(rend, scoreAdderTex, NULL, &scoreAdder);
+			SDL_RenderCopy(rend, explodeTex, NULL, &explode);			
+		}
 
 		// checking collision between asteriod and passenger ship
 		for(int i = 0; i<numObstacles; i++)
